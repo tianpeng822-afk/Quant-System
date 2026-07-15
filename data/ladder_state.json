@@ -1,0 +1,37 @@
+{
+  "163406": {
+    "triggered": [
+      0,
+      1,
+      2
+    ],
+    "last_reset": null,
+    "note": "\u9009\u9879B: \u65e7\u7b56\u7565\u5df2\u5356, \u4e0d\u8865\u8bfe20/35/50%, \u76f4\u63a5\u7b4965%\u6863"
+  },
+  "004674": {
+    "triggered": [],
+    "last_reset": null,
+    "peak_nav": 2.9634
+  },
+  "008903": {
+    "triggered": [
+      0
+    ],
+    "last_reset": null,
+    "peak_nav": 1.3823
+  },
+  "001618": {
+    "triggered": [],
+    "last_reset": null,
+    "peak_nav": 2.8296
+  },
+  "019034": {
+    "triggered": [],
+    "last_reset": null,
+    "peak_nav": 4.3012
+  },
+  "023977": {
+    "triggered": [],
+    "last_reset": null
+  }
+}
