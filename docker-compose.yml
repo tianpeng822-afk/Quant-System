@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: myfund_web
+    command: streamlit run web/0_首页.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    restart: always
+
+  scheduler:
+    build: .
+    container_name: myfund_scheduler
+    command: python main.py
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    restart: always

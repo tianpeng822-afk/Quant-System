@@ -1,0 +1,2 @@
+# 占位文件，确保 data/ 目录被 git 追踪
+# 实际 .db 文件已在 .gitignore 中忽略
