@@ -119,8 +119,15 @@ def auto_create_dca_orders(db: Session, today: date) -> list[PendingOrder]:
         if base_amount <= 0:
             continue
 
-        pnl_pct = float(h.unrealized_pnl_pct or 0)
         if h.dynamic_dca_enabled:
+            # 支付宝口径：用 T-1 净值计算盈亏率（扣款前一日净值）
+            t1_nav = db.query(NavHistory).filter(
+                NavHistory.fund_code == h.fund_code
+            ).order_by(NavHistory.nav_date.desc()).offset(1).limit(1).first()
+            if t1_nav and h.avg_cost_price and float(h.avg_cost_price) > 0:
+                pnl_pct = (float(t1_nav.unit_nav) - float(h.avg_cost_price)) / float(h.avg_cost_price) * 100
+            else:
+                pnl_pct = float(h.unrealized_pnl_pct or 0)
             rate = get_dca_deduction_rate(pnl_pct)
         else:
             rate = 1.0
@@ -703,10 +710,16 @@ def _build_report(
         action_guides = []
 
         for h in holdings:
-            pnl_pct = float(h.unrealized_pnl_pct or 0)
-
             if h.dca_enabled and h.dynamic_dca_enabled and h.dca_weekly_amount and h.dca_day_of_week == dca_weekday:
                 base = float(h.dca_weekly_amount)
+                # 支付宝口径：用 T-1 净值计算盈亏率
+                t1_nav = db.query(NavHistory).filter(
+                    NavHistory.fund_code == h.fund_code
+                ).order_by(NavHistory.nav_date.desc()).offset(1).limit(1).first()
+                if t1_nav and h.avg_cost_price and float(h.avg_cost_price) > 0:
+                    pnl_pct = (float(t1_nav.unit_nav) - float(h.avg_cost_price)) / float(h.avg_cost_price) * 100
+                else:
+                    pnl_pct = float(h.unrealized_pnl_pct or 0)
                 rate = get_dca_deduction_rate(pnl_pct)
                 actual = base * rate
                 weekly_amount = round(actual, 2)
