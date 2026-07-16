@@ -521,7 +521,7 @@ def run_daily_etl(force_refresh: bool = False) -> None:
                 daily_pnl += fund_daily_pnl
                 daily_pnl_by_fund[h.fund_code] = fund_daily_pnl
 
-        report = _build_report(today, holdings, total_market_value, total_unrealized, total_pnl_pct, daily_pnl, daily_pnl_by_fund, ladder_triggers, ladder_statuses)
+        report = _build_report(today, holdings, total_market_value, total_unrealized, total_pnl_pct, daily_pnl, daily_pnl_by_fund, ladder_triggers, ladder_statuses, db)
         logger.info("推送报告生成完成")
 
         # 依次尝试邮件、企业微信、PushPlus，若失败则降级重试
@@ -648,8 +648,10 @@ def _build_report(
     daily_pnl_by_fund: dict[str, Decimal] | None = None,
     ladder_triggers: list[dict] | None = None,
     ladder_statuses: list[dict] | None = None,
+    db: Session | None = None,
 ) -> str:
     """构建 Markdown 格式的日报正文"""
+    from app.models import NavHistory
     pnl_color = "#FF0000" if total_pnl >= 0 else "#008000"
     daily_pnl_color = "#FF0000" if daily_pnl > 0 else "#008000"
     
@@ -713,13 +715,13 @@ def _build_report(
             if h.dca_enabled and h.dynamic_dca_enabled and h.dca_weekly_amount and h.dca_day_of_week == dca_weekday:
                 base = float(h.dca_weekly_amount)
                 # 支付宝口径：用 T-1 净值计算盈亏率
-                t1_nav = db.query(NavHistory).filter(
-                    NavHistory.fund_code == h.fund_code
-                ).order_by(NavHistory.nav_date.desc()).offset(1).limit(1).first()
-                if t1_nav and h.avg_cost_price and float(h.avg_cost_price) > 0:
-                    pnl_pct = (float(t1_nav.unit_nav) - float(h.avg_cost_price)) / float(h.avg_cost_price) * 100
-                else:
-                    pnl_pct = float(h.unrealized_pnl_pct or 0)
+                pnl_pct = float(h.unrealized_pnl_pct or 0)
+                if db is not None:
+                    t1_nav = db.query(NavHistory).filter(
+                        NavHistory.fund_code == h.fund_code
+                    ).order_by(NavHistory.nav_date.desc()).offset(1).limit(1).first()
+                    if t1_nav and h.avg_cost_price and float(h.avg_cost_price) > 0:
+                        pnl_pct = (float(t1_nav.unit_nav) - float(h.avg_cost_price)) / float(h.avg_cost_price) * 100
                 rate = get_dca_deduction_rate(pnl_pct)
                 actual = base * rate
                 weekly_amount = round(actual, 2)
